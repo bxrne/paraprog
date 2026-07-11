@@ -3,12 +3,16 @@
 version = 4
 
 [[package]]
-name = "assn1"
+name = "assn1-prog1"
 version = "0.1.0"
 dependencies = [
  "tracing",
  "tracing-subscriber",
 ]
+
+[[package]]
+name = "assn1-prog2"
+version = "0.1.0"
 
 [[package]]
 name = "cfg-if"
