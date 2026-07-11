@@ -1,3 +1,13 @@
+//! Clamped exponentiation: `output[i] = min(values[i] ^ exponents[i], CLAMP_MAX)`.
+//!
+//! Ported from the CS149 assignment 1 C++ starter code. Two implementations
+//! are provided against the same signature so they can be benchmarked
+//! against each other:
+//! - [`clamped_exp_serial`]: straightforward scalar loop.
+//! - [`clamped_exp_simd`]: intended to use explicit SIMD; currently falls
+//!   back to the serial path (see TODO below).
+
+/// Upper bound that a computed result is clamped to.
 const CLAMP_MAX: f32 = 9.999999;
 
 /// Computes `values[i] ^ exponents[i]` for every element, clamping each
@@ -16,6 +26,11 @@ pub fn clamped_exp_serial(values: &[f32], exponents: &[i32], output: &mut [f32])
     }
 }
 
+/// Computes `base ^ exponent`, clamped to [`CLAMP_MAX`].
+///
+/// # Panics
+///
+/// Panics if `exponent` is negative.
 fn clamped_power(base: f32, exponent: i32) -> f32 {
     assert!(exponent >= 0);
 
@@ -29,6 +44,27 @@ fn clamped_power(base: f32, exponent: i32) -> f32 {
     }
 
     result.min(CLAMP_MAX)
+}
+
+/// SIMD counterpart to [`clamped_exp_serial`]. Same signature and same
+/// per-element result, so the two can be swapped and benchmarked directly.
+///
+/// # Panics
+///
+/// Panics if `values`, `exponents`, and `output` do not all have the same
+/// length (delegated to [`clamped_exp_serial`] for now).
+///
+/// # TODO
+///
+/// - Replace the fallback below with an explicit SIMD implementation
+///   (`std::simd` or `std::arch` intrinsics), operating on chunks of the
+///   input in lockstep.
+/// - Handle the remainder (`values.len() % LANES != 0`) with a scalar tail
+///   loop, reusing [`clamped_power`].
+/// - Benchmark against [`clamped_exp_serial`] and record the speedup in the
+///   crate README.
+pub fn clamped_exp_simd(values: &[f32], exponents: &[i32], output: &mut [f32]) {
+    clamped_exp_serial(values, exponents, output);
 }
 
 #[cfg(test)]
@@ -126,5 +162,19 @@ mod tests {
         let mut output = [0.0; 1];
 
         clamped_exp_serial(&values, &exponents, &mut output);
+    }
+
+    #[test]
+    fn simd_matches_serial() {
+        let values = [2.0, 3.0, 10.0, 0.0];
+        let exponents = [3, 0, 2, 5];
+
+        let mut serial_output = [0.0; 4];
+        clamped_exp_serial(&values, &exponents, &mut serial_output);
+
+        let mut simd_output = [0.0; 4];
+        clamped_exp_simd(&values, &exponents, &mut simd_output);
+
+        assert_eq!(serial_output, simd_output);
     }
 }

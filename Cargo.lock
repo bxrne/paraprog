@@ -13,6 +13,10 @@ dependencies = [
 [[package]]
 name = "assn1-prog2"
 version = "0.1.0"
+dependencies = [
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "cfg-if"
